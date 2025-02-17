@@ -276,8 +276,10 @@ q_heat = 1e11 * L_ref**2 / (k_ref * T_ref)
 DD = 131 / k_ref
 
 def pde_heat(x, y, var):
-    D = y[1][0]
+    D = y[1][:,0]
     y_val = y[0][:, 0, :]
+    # print(f"D:{D.shape}")
+    # print(f"y_val:{y_val.shape}")
     Qheat = torch.zeros_like(D, device=x.device)
     Qheat[D == DD] = q_heat
     T_xx = dde.grad.hessian(y_val, x, i=0, j=0)
@@ -297,17 +299,40 @@ geo = dde.geometry.CSGUnion(dde.geometry.CSGUnion(geo_jiban, geo_chiplayer), geo
 geo = dde.geometry.CSGUnion(geo, geo_heatsink)
 
 def boundary(x, on_boundary):
+    # not判断 所以容差低等于精度高
     if not on_boundary:
         return False
+    atol = 1e-5
     z_min = -1.02
     z_max = 6.36
-    return not (dde.utils.isclose(x[2], z_min) or dde.utils.isclose(x[2], z_max))
+    # 原始条件：排除z轴的两个极值面
+    original_cond = not (np.isclose(x[2], z_min, atol=atol) or np.isclose(x[2], z_max, atol=atol))
+    
+    # 新增条件：当z=0.36或z=-0.02时，判断是否在长方形边框上
+    rect_z_values = [0.36, -0.02]
+    is_special_z = any(np.isclose(x[2], z_val, atol=atol) for z_val in rect_z_values)
+    
+    # 长方形边长3.2，中心在原点 → 坐标范围x,y ∈ [-1.6, 1.6]
+    x_abs = abs(x[0])
+    y_abs = abs(x[1])
+    border_threshold = 1.6
+    
+    # 检查点是否在长方形边框上：
+    # 1. 满足x或y的绝对值等于1.6，且另一坐标绝对值在1.6内
+    is_on_border = (
+        (np.isclose(x_abs, border_threshold, atol=atol) and (y_abs <= border_threshold )) or
+        (np.isclose(y_abs, border_threshold, atol=atol) and (x_abs <= border_threshold ))
+    )
+    
+    # 最终条件：满足原始条件且不在特殊Z平面的边框上
+    return original_cond and not (is_special_z and is_on_border)
+
 
 def boundary_top(x, on_boundary):
-    return on_boundary and dde.utils.isclose(x[2], 6.36)
+    return on_boundary and np.isclose(x[2], 6.36,atol=1.e-10)
 
 def boundary_bot(x, on_boundary):
-    return on_boundary and dde.utils.isclose(x[2], -1.02)
+    return on_boundary and np.isclose(x[2], -1.02,atol=1.e-10)
 
 def robin_func_top(x, y):
     D_val = 398 / k_ref
@@ -329,7 +354,7 @@ data = dde.data.PDE(
     geo, pde=pde_heat,
     bcs=[bc_cebi, bc_top, bc_bot],
     num_domain=100,
-    num_boundary=100,
+    num_boundary=1000,
     train_distribution="uniform",
     anchors=None
 )

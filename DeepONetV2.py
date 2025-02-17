@@ -323,6 +323,7 @@ class DeepONet_V2(NN):
         return MultiFNN(layer_sizes_trunk, self.activation_trunk, self.kernel_initializer)
 
     def merge_branch_trunk(self, x_func, x_loc, index):
+        # print(f"x-loc:{x_loc.shape}")
         x_func = x_func.unsqueeze(1).repeat(1, 2, 1)
         y = torch.einsum("bif,bif->bi", x_func, x_loc)
         y = y.unsqueeze(-1)
@@ -345,8 +346,9 @@ class DeepONet_V2(NN):
         x = self.multi_output_strategy.call(x_func, x_loc_tuple)
         if self._output_transform is not None:
             x = self._output_transform(inputs, x)
-
+        tem = x
         self.iters += 1
+        # D_factor = D_factor.T
         if self.iters % 50 == 0:
             outputs = (x[:, 0, :] + 1) * 273.15
             print(f"------outputs: min:{torch.min(outputs):.4f}, max:{torch.max(outputs):.4f}, median:{torch.median(outputs):.4f}------")
@@ -357,5 +359,11 @@ class DeepONet_V2(NN):
             os.makedirs("Results", exist_ok=True)
             vtk_path = os.path.join("Results", "pdeloss-T.vtk")
             grid.save(vtk_path)
-
-        return (x, D_factor)
+        print(f"x-loc:{x_loc.shape}")
+        print(f"x_func:{x_func.shape}")
+        print(f"T:{tem.shape}")
+        print(f"D_factor:{D_factor.shape}")
+        D_factor = D_factor.T
+        # combined_output = torch.cat([tem, D_factor], dim=1)  # 沿特征维度合并
+        return (tem,D_factor)
+        

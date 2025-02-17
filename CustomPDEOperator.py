@@ -172,6 +172,10 @@ class CustomPDEOperator(dde.data.PDEOperator):
                 # # 获取边界点
                 boundary = cuboid.random_boundary_points(n=n_boundary_heatsource,random="pseudo") # 点数
                 domain_heatsouce = cuboid.random_points(n=n_domain_heatsource)# 点数
+                
+                # for point in domain_heatsouce:
+                #     if cuboid.inside(point):
+                        
                 boundary_points.append(boundary)
     
                 # 定义边界条件
@@ -200,25 +204,33 @@ class CustomPDEOperator(dde.data.PDEOperator):
         
         boundary_points = np.array(boundary_points)
         boundary_points = boundary_points.reshape(-1, 3)
+        print(f"热源边界{boundary_points.shape}")
         # print(boundary_points,type(boundary_points))
         # pv.PolyData(boundary_points).plot()
         domain_heatsource_points = np.array(domain_heatsource_points)
         domain_heatsource_points  = domain_heatsource_points.reshape(-1,3)
+        print(f"热源域内{domain_heatsource_points.shape}")
         
         # 取固定材料之间边界点
         boundary_points_jiban_chiplayer = self.surface_jiban_chiplayer.random_boundary_points(self.num_boundary_points_geom1)
+        print(f"boundary_points_jiban_chiplayer{boundary_points_jiban_chiplayer.shape}")
         # pv.PolyData(boundary_points_jiban_chiplayer).plot()
         boundary_points_heatspread_chiplayer = self.surface_heatspread_chiplayer.random_boundary_points(self.num_boundary_points_geom2)
+        print(f"boundary_points_heatspread_chiplayer{boundary_points_heatspread_chiplayer.shape}")
         boundary_points_2 = np.vstack((boundary_points_jiban_chiplayer, boundary_points_heatspread_chiplayer))
         boundary_points = np.vstack((boundary_points, boundary_points_2))
         # pv.PolyData(boundary_points).plot()
 
         domain_geo_jiban = self.geo_jiban.random_points(n=n_domain_jiban)# 点数
+        print(f"domain_geo_jiban{domain_geo_jiban.shape}")
         domain_geo_chiplayer = self.generate_interior_points(self.geo_chiplayer, cuboids, n_domain_chiplayer)# 点数
+        print(f"domain_geo_jiban{domain_geo_jiban.shape}")
         # pv.PolyData(domain_geo_chiplayer).save("domain_geo_chiplayer.vtk")
         # domain_geo_chiplayer = self.geo_chiplayer.random_points(n=1500)# 点数
         domain_geo_heatspead = self.geo_heatspead.random_points(n=n_domain_heatspread)# 点数
+        print(f"domain_geo_heatspead{domain_geo_heatspead.shape}")
         domain_geo_heatsink = self.geo_heatsink.random_points(n=n_domain_heatsink)# 点数
+        print(f"domain_geo_heatsink{domain_geo_heatsink.shape}")
         all_anchors = np.vstack((boundary_points, domain_geo_jiban, domain_geo_chiplayer, domain_geo_heatspead, domain_geo_heatsink,domain_heatsource_points))
         # side_wall_points = self.sample_side_wall_points(n=500)
         # boundary_points = np.vstack((boundary_points, side_wall_points))
@@ -254,12 +266,15 @@ class CustomPDEOperator(dde.data.PDEOperator):
     
         func_vals = self.func_space.eval_batch(func_feats, self.eval_pts)
         v, x, vx = self.bc_inputs(func_feats, func_vals)
+        print(f"x-bc{x.shape}")
         if self.pde.pde is not None:
             v_pde, x_pde, vx_pde = self.gen_inputs(
                 func_feats, func_vals, self.pde.train_x_all
             )
+            print(f"x-pde{x_pde.shape}")
             v = np.vstack((v, v_pde))
             x = np.vstack((x, x_pde))
+            print(f"x-{x.shape}")
             vx = np.vstack((vx, vx_pde))
             v = torch.tensor(v, dtype=torch.float32, device=self.device)
             x = torch.tensor(x, dtype=torch.float32, device=self.device)
@@ -267,7 +282,7 @@ class CustomPDEOperator(dde.data.PDEOperator):
         # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
         # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
         # D_factor = D_factor.to(self.device)
-        D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device).T
+        D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device)
         device = x.device
         D_factor=D_factor.to(device)
         # D_factor = torch.as_tensor(D_factor, dtype=torch.float32, device=self.device)
@@ -346,6 +361,7 @@ class CustomPDEOperator(dde.data.PDEOperator):
                 )
                 v = np.vstack((v, v_pde))
                 x = np.vstack((x, x_pde))
+                # print(x.shape)
                 vx = np.vstack((vx, vx_pde))
                 v = torch.tensor(v, dtype=torch.float32, device=self.device)
                 x = torch.tensor(x, dtype=torch.float32, device=self.device)
@@ -354,13 +370,13 @@ class CustomPDEOperator(dde.data.PDEOperator):
             # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
             # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
             # D_factor = torch.as_tensor(D_factor, dtype=torch.float32, device=self.device)
-            D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device).T
+            D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device)
             # assert x.device == D_factor.device
             self.test_x = (v, x, D_factor)
             self.test_aux_vars = vx
         return self.test_x, self.test_y, self.test_aux_vars
     
-    def generate_interior_points(self, geo_A, geo_list, n, max_attempts=10000):
+    def generate_interior_points(self, geo_A, geo_list, n, max_attempts=500000):
         """
         生成 geo_A 的域内点，确保这些点不在 geo_list 中任何几何体的边界上。
 
@@ -382,9 +398,10 @@ class CustomPDEOperator(dde.data.PDEOperator):
 
             # 检查点是否在 geo_list 中任何几何体的边界上
             on_any_boundary = any(geo.on_boundary(point) for geo in geo_list)
+            in_any_domain = any(geo.inside(point) for geo in geo_list)
 
             # 如果点不在任何边界上，则添加到结果中
-            if not on_any_boundary:
+            if not on_any_boundary and not in_any_domain:
                 interior_points.append(point)
 
             attempts += 1

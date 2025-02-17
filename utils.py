@@ -182,7 +182,7 @@ def getDFactorV2(single_point_data, heat_sources, boundary_points, dx=1, dy=1, d
     # # D_tensor = torch.as_tensor(D.T, dtype=torch.float32, device=device)
     # # D_tensor = torch.from_numpy(D.T).float().to(device)
     # return D_tensor
-    D_tensor = torch.from_numpy(D).float().to(device)
+    D_tensor = torch.from_numpy(D).float().T.to(device)
     return D_tensor
 
 def getDFactorV3(single_point_data, heat_sources, dx=1, dy=1, dz=0.01):
