@@ -361,7 +361,7 @@ if torch.cuda.device_count() > 1:
     print(f"Using {torch.cuda.device_count()} GPUs with DataParallel!")
     net = DataParallelWrapper(net, device_ids=list(range(torch.cuda.device_count())))
 
-print("检查 regularizer 是否存在:", hasattr(net, "regularizer"))
+# print("检查 regularizer 是否存在:", hasattr(net, "regularizer"))
 model = dde.Model(dataOperator, net)
 model.compile("adam", lr=0.0005)
 

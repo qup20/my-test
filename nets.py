@@ -215,3 +215,61 @@ class MultiFNN(NN):
                     outputs[mask] = selected_x  # Map outputs back to their original indices.
             outputs_all[:, i, :] = outputs
         return outputs_all
+    
+    # def forward(self, inputs):
+    #     """
+    #     inputs[0]: 主输入 X，形状为 (batch_size, input_dim)。
+    #     inputs[1]: 辅助输入 D_factors，要求形状为 (batch_size, D_len)。
+    #     """
+    #     X = inputs[0]
+    #     D_factors = inputs[1]
+        
+    #     # 将 X 与 D_factors 移动至目标设备
+    #     if len(self.branches) > 0:
+    #         sample_branch = next(iter(self.branches.values()))
+    #         target_device = next(sample_branch.parameters()).device
+    #         X = X.to(target_device)
+    #         D_factors = D_factors.to(target_device)
+    #     else:
+    #         target_device = X.device
+
+    #     # 保证 D_factors 的第一维为 batch_size。如果 D_factors 已经形成为 (batch_size, D_len) 则保持不变。
+    #     # 这里不再对 D_factors 做额外转置，确保 mask 与 X 的第一维一致。
+    #     if D_factors.shape[0] != X.size(0):
+    #         raise IndexError("D_factors 的第一维必须等于 X 的 batch size.")
+
+    #     batch_size = X.size(0)
+    #     D_len = D_factors.shape[1]
+    #     output_dim = self.branches['0'][-1].out_features  # 假定 branch '0' 存在
+    #     outputs_all = torch.zeros(batch_size, D_len, output_dim, device=target_device, dtype=X.dtype)
+        
+    #     # 对于每个 D_factor值（对应每个分支），分别计算输出
+    #     for i in range(D_len):
+    #         # 提取第 i 列，形状为 (batch_size,)
+    #         D_column = D_factors[:, i]
+    #         outputs = torch.zeros(batch_size, output_dim, device=target_device, dtype=X.dtype)
+            
+    #         # 如果存在特殊输入变换则先变换 X
+    #         if self._input_transform is not None:
+    #             X_transformed = self._input_transform(X)
+    #         else:
+    #             X_transformed = X
+            
+    #         # 针对每个分支，通过 branch_map 判定 mask
+    #         for branch_value, branch_idx in self.branch_map.items():
+    #             mask = (D_column == branch_value)  # mask 形状 (batch_size,)
+    #             if torch.any(mask):
+    #                 selected_x = X_transformed[mask]  # 选取满足条件的样本，注意 mask 长度与 X_transformed 第一维一致
+    #                 selected_x = selected_x.to(target_device)
+    #                 linears = self.branches[str(branch_idx)]
+                    
+    #                 # 依次通过线性层、激活函数
+    #                 for j, linear in enumerate(linears[:-1]):
+    #                     if isinstance(self.activation, list):
+    #                         selected_x = self.activation[j](linear(selected_x))
+    #                     else:
+    #                         selected_x = self.activation(linear(selected_x))
+    #                 selected_x = linears[-1](selected_x)
+    #                 outputs[mask] = selected_x
+    #         outputs_all[:, i, :] = outputs
+    #     return outputs_all

@@ -13,8 +13,8 @@ T_ref = 273.15  # K
 k_ref = 398  #
 
 # #点数#4090
-n_boundary_heatsource = 50
-n_domain_heatsource = 50
+n_boundary_heatsource = 100
+n_domain_heatsource = 100
 n_interface_chiplayer = 300
 n_domain_jiban = 1000
 n_domain_chiplayer = 1000
@@ -267,7 +267,7 @@ class CustomPDEOperator(dde.data.PDEOperator):
         # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
         # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
         # D_factor = D_factor.to(self.device)
-        D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device)
+        D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device).T
         device = x.device
         D_factor=D_factor.to(device)
         # D_factor = torch.as_tensor(D_factor, dtype=torch.float32, device=self.device)
@@ -354,7 +354,7 @@ class CustomPDEOperator(dde.data.PDEOperator):
             # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
             # D_factor = utils.getDFactorV2(x, func_feats, boundary_points)
             # D_factor = torch.as_tensor(D_factor, dtype=torch.float32, device=self.device)
-            D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device)
+            D_factor = utils.getDFactorV2(x.cpu().numpy(), func_feats, boundary_points, device=self.device).T
             # assert x.device == D_factor.device
             self.test_x = (v, x, D_factor)
             self.test_aux_vars = vx

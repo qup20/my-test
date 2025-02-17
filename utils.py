@@ -176,11 +176,13 @@ def getDFactorV2(single_point_data, heat_sources, boundary_points, dx=1, dy=1, d
     # # 移动到主设备（将与模型的设备自动同步）
     # return D_tensor.to(device)  # 需要保证device变量全局可见，可在文件顶部声明
     device = single_point_data.device if hasattr(single_point_data, 'device') else torch.device("cpu")
-    D_tensor = torch.from_numpy(D).float().T.to(device)
-    # D_tensor = torch.from_numpy(D.T).float().to(device)
+    # D_tensor = torch.from_numpy(D).float().T.to(device)
+    # # D_tensor = torch.from_numpy(D.T).float().to(device)
+    # # return D_tensor
+    # # D_tensor = torch.as_tensor(D.T, dtype=torch.float32, device=device)
+    # # D_tensor = torch.from_numpy(D.T).float().to(device)
     # return D_tensor
-    # D_tensor = torch.as_tensor(D.T, dtype=torch.float32, device=device)
-    # D_tensor = torch.from_numpy(D.T).float().to(device)
+    D_tensor = torch.from_numpy(D).float().to(device)
     return D_tensor
 
 def getDFactorV3(single_point_data, heat_sources, dx=1, dy=1, dz=0.01):
